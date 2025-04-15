@@ -43,7 +43,7 @@ export const filterByConfidence = (
  */
 export const sortByPriority = (objects: Array<{ 
   distance: 'near' | 'medium' | 'far',
-  boundingBox: { width: number, height: number },
+  boundingBox: { x: number, y: number, width: number, height: number },
   [key: string]: any
 }>) => {
   return [...objects].sort((a, b) => {

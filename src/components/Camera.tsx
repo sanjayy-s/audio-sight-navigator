@@ -79,8 +79,16 @@ const Camera: React.FC = () => {
       // Filter out low confidence detections
       const highConfidenceObjects = filterByConfidence(detectedObjects);
       
+      // We need to ensure the objects have the correct structure before sorting
+      // The sortByPriority function expects objects with distance and boundingBox properties
+      const sortableObjects = highConfidenceObjects.filter(obj => 
+        obj.distance && obj.boundingBox && 
+        'x' in obj.boundingBox && 'y' in obj.boundingBox && 
+        'width' in obj.boundingBox && 'height' in obj.boundingBox
+      );
+      
       // Sort by priority (near objects first, then by size)
-      const prioritizedObjects = sortByPriority(highConfidenceObjects);
+      const prioritizedObjects = sortByPriority(sortableObjects);
       
       // Draw each detected object
       prioritizedObjects.forEach(obj => {
@@ -159,8 +167,15 @@ const Camera: React.FC = () => {
     // Filter out low confidence detections
     const highConfidenceObjects = filterByConfidence(detectedObjects);
     
+    // We need to ensure the objects have the correct structure before sorting
+    const sortableObjects = highConfidenceObjects.filter(obj => 
+      obj.distance && obj.boundingBox && 
+      'x' in obj.boundingBox && 'y' in obj.boundingBox && 
+      'width' in obj.boundingBox && 'height' in obj.boundingBox
+    );
+    
     // Sort by priority to play sounds for most important objects first
-    const prioritizedObjects = sortByPriority(highConfidenceObjects);
+    const prioritizedObjects = sortByPriority(sortableObjects);
     
     // Play sound for each object, starting with the highest priority one
     prioritizedObjects.forEach((obj, index) => {
