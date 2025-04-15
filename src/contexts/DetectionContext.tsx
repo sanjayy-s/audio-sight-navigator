@@ -89,7 +89,7 @@ export const DetectionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
     
     // Create a new detection interval with reduced latency (500ms instead of 2000ms)
-    const interval = setInterval(() => {
+    const interval = window.setInterval(() => {
       // Generate more accurate mock objects with consistent positions for better testing
       const mockObjects: DetectedObject[] = [];
       
@@ -125,7 +125,7 @@ export const DetectionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       setDetectedObjects(mockObjects);
     }, 500); // Reduced from 2000ms to 500ms for lower latency
     
-    setDetectionInterval(interval);
+    setDetectionInterval(interval as unknown as number);
   };
 
   const stopDetection = () => {
@@ -133,7 +133,7 @@ export const DetectionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     
     // Clear any detection intervals
     if (detectionInterval) {
-      clearInterval(detectionInterval);
+      clearInterval(detectionInterval as unknown as number);
       setDetectionInterval(null);
     }
     
@@ -144,7 +144,7 @@ export const DetectionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     return () => {
       if (detectionInterval) {
-        clearInterval(detectionInterval);
+        clearInterval(detectionInterval as unknown as number);
       }
     };
   }, [detectionInterval]);

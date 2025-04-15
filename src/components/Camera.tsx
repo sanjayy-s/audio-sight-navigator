@@ -4,6 +4,7 @@ import { useDetection } from '../contexts/DetectionContext';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Volume2, VolumeX } from 'lucide-react';
 import { filterByConfidence, sortByPriority } from '../utils/detectionUtils';
+import { playDetectionSound } from '../utils/audioFeedback';
 
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -150,6 +151,33 @@ const Camera: React.FC = () => {
       return () => cancelAnimationFrame(frameId);
     }
   }, [detectedObjects, frameProcessing]);
+
+  // Play sounds for detected objects
+  useEffect(() => {
+    if (!isDetecting || isMuted || detectedObjects.length === 0) return;
+    
+    // Filter out low confidence detections
+    const highConfidenceObjects = filterByConfidence(detectedObjects);
+    
+    // Sort by priority to play sounds for most important objects first
+    const prioritizedObjects = sortByPriority(highConfidenceObjects);
+    
+    // Play sound for each object, starting with the highest priority one
+    prioritizedObjects.forEach((obj, index) => {
+      // Add a small delay between sounds to avoid overwhelming the user
+      const delay = index * 150;
+      setTimeout(() => {
+        playDetectionSound(
+          obj.label, 
+          obj.distance,
+          { 
+            duration: obj.distance === 'near' ? 400 : 200,
+            volume: obj.confidence // Higher confidence = higher volume
+          }
+        );
+      }, delay);
+    });
+  }, [detectedObjects, isDetecting, isMuted]);
 
   const handleToggleDetection = () => {
     if (isDetecting) {
