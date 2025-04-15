@@ -1,9 +1,8 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { useDetection } from '../contexts/DetectionContext';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Volume2, VolumeX } from 'lucide-react';
-import { filterByConfidence, sortByPriority } from '../utils/detectionUtils';
+import { filterByConfidence, sortByPriority, hasRequiredProperties } from '../utils/detectionUtils';
 import { playDetectionSound } from '../utils/audioFeedback';
 
 const Camera: React.FC = () => {
@@ -23,7 +22,6 @@ const Camera: React.FC = () => {
     isLoading
   } = useDetection();
 
-  // Set up the video stream when camera permission is granted
   useEffect(() => {
     const setupCamera = async () => {
       if (hasCameraPermission && !stream) {
@@ -50,7 +48,6 @@ const Camera: React.FC = () => {
 
     setupCamera();
     
-    // Cleanup function
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -58,7 +55,6 @@ const Camera: React.FC = () => {
     };
   }, [hasCameraPermission, stream]);
 
-  // Process and draw detected objects on canvas with higher precision
   useEffect(() => {
     if (!canvasRef.current || !videoRef.current || frameProcessing) return;
     
@@ -69,34 +65,20 @@ const Camera: React.FC = () => {
       const ctx = canvasRef.current.getContext('2d');
       if (!ctx) return;
       
-      // Match canvas dimensions to video
       canvasRef.current.width = videoRef.current.videoWidth;
       canvasRef.current.height = videoRef.current.videoHeight;
       
-      // Clear previous drawings
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       
-      // Filter out low confidence detections
       const highConfidenceObjects = filterByConfidence(detectedObjects);
       
-      // We need to ensure the objects have the correct structure before sorting
-      // The sortByPriority function expects objects with distance and boundingBox properties
-      const sortableObjects = highConfidenceObjects.filter(obj => 
-        obj.distance && obj.boundingBox && 
-        'x' in obj.boundingBox && 'y' in obj.boundingBox && 
-        'width' in obj.boundingBox && 'height' in obj.boundingBox
-      );
+      const prioritizedObjects = sortByPriority(highConfidenceObjects);
       
-      // Sort by priority (near objects first, then by size)
-      const prioritizedObjects = sortByPriority(sortableObjects);
-      
-      // Draw each detected object
       prioritizedObjects.forEach(obj => {
         const { x, y, width, height } = obj.boundingBox;
         const canvasWidth = canvasRef.current!.width;
         const canvasHeight = canvasRef.current!.height;
         
-        // Set color based on distance
         let color = '';
         switch (obj.distance) {
           case 'near':
@@ -110,7 +92,6 @@ const Camera: React.FC = () => {
             break;
         }
         
-        // Draw bounding box with enhanced visibility
         ctx.strokeStyle = color;
         ctx.lineWidth = 3;
         ctx.strokeRect(
@@ -120,14 +101,12 @@ const Camera: React.FC = () => {
           height * canvasHeight
         );
         
-        // Draw label with shadow for better visibility
         ctx.shadowColor = 'black';
         ctx.shadowBlur = 4;
         ctx.fillStyle = color;
         ctx.font = 'bold 16px Arial';
         const text = `${obj.label} (${Math.round(obj.confidence * 100)}%)`;
         
-        // Draw label background
         const textMeasure = ctx.measureText(text);
         ctx.fillStyle = 'rgba(0,0,0,0.6)';
         ctx.fillRect(
@@ -137,7 +116,6 @@ const Camera: React.FC = () => {
           20
         );
         
-        // Draw text
         ctx.fillStyle = color;
         ctx.fillText(
           text,
@@ -152,34 +130,20 @@ const Camera: React.FC = () => {
     
     processFrame();
     
-    // Set up a more efficient rendering cycle using requestAnimationFrame
-    // only when we have objects to draw
     if (detectedObjects.length > 0) {
       const frameId = requestAnimationFrame(processFrame);
       return () => cancelAnimationFrame(frameId);
     }
   }, [detectedObjects, frameProcessing]);
 
-  // Play sounds for detected objects
   useEffect(() => {
     if (!isDetecting || isMuted || detectedObjects.length === 0) return;
     
-    // Filter out low confidence detections
     const highConfidenceObjects = filterByConfidence(detectedObjects);
     
-    // We need to ensure the objects have the correct structure before sorting
-    const sortableObjects = highConfidenceObjects.filter(obj => 
-      obj.distance && obj.boundingBox && 
-      'x' in obj.boundingBox && 'y' in obj.boundingBox && 
-      'width' in obj.boundingBox && 'height' in obj.boundingBox
-    );
+    const prioritizedObjects = sortByPriority(highConfidenceObjects);
     
-    // Sort by priority to play sounds for most important objects first
-    const prioritizedObjects = sortByPriority(sortableObjects);
-    
-    // Play sound for each object, starting with the highest priority one
     prioritizedObjects.forEach((obj, index) => {
-      // Add a small delay between sounds to avoid overwhelming the user
       const delay = index * 150;
       setTimeout(() => {
         playDetectionSound(
@@ -187,7 +151,7 @@ const Camera: React.FC = () => {
           obj.distance,
           { 
             duration: obj.distance === 'near' ? 400 : 200,
-            volume: obj.confidence // Higher confidence = higher volume
+            volume: obj.confidence
           }
         );
       }, delay);
@@ -232,7 +196,6 @@ const Camera: React.FC = () => {
       )}
       
       <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden">
-        {/* Video feed */}
         <video
           ref={videoRef}
           className="w-full h-full object-cover"
@@ -241,20 +204,17 @@ const Camera: React.FC = () => {
           muted
         />
         
-        {/* Canvas overlay for object detection */}
         <canvas
           ref={canvasRef}
           className="absolute top-0 left-0 w-full h-full"
         />
         
-        {/* Loading overlay */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>
         )}
         
-        {/* Controls overlay */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
           <Button
             onClick={handleToggleDetection}
@@ -277,7 +237,6 @@ const Camera: React.FC = () => {
         </div>
       </div>
 
-      {/* Audio pulses visualization for detected objects */}
       {isDetecting && detectedObjects.map((obj) => (
         <div 
           key={obj.id}

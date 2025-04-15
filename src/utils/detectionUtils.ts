@@ -36,17 +36,35 @@ export const filterByConfidence = (
 };
 
 /**
+ * Verifies if an object has all the required properties for sorting
+ * 
+ * @param obj - The object to verify
+ * @returns Boolean indicating if the object has all required properties
+ */
+export const hasRequiredProperties = (obj: any): boolean => {
+  return (
+    obj &&
+    typeof obj.distance === 'string' &&
+    ['near', 'medium', 'far'].includes(obj.distance) &&
+    obj.boundingBox &&
+    typeof obj.boundingBox.width === 'number' &&
+    typeof obj.boundingBox.height === 'number' &&
+    typeof obj.boundingBox.x === 'number' &&
+    typeof obj.boundingBox.y === 'number'
+  );
+};
+
+/**
  * Sort detected objects by priority (distance and size).
  * 
  * @param objects - Array of detected objects
  * @returns Sorted array with highest priority objects first
  */
-export const sortByPriority = (objects: Array<{ 
-  distance: 'near' | 'medium' | 'far',
-  boundingBox: { x: number, y: number, width: number, height: number },
-  [key: string]: any
-}>) => {
-  return [...objects].sort((a, b) => {
+export const sortByPriority = (objects: Array<any>) => {
+  // Filter objects to ensure they have the required structure
+  const validObjects = objects.filter(hasRequiredProperties);
+  
+  return [...validObjects].sort((a, b) => {
     // First sort by distance (near objects have highest priority)
     const distancePriority = { near: 3, medium: 2, far: 1 };
     const distanceDiff = distancePriority[a.distance] - distancePriority[b.distance];
