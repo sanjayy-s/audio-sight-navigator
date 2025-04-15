@@ -3,12 +3,14 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useDetection } from '../contexts/DetectionContext';
 import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, Volume2, VolumeX } from 'lucide-react';
+import { filterByConfidence, sortByPriority } from '../utils/detectionUtils';
 
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [frameProcessing, setFrameProcessing] = useState(false);
 
   const { 
     isDetecting,
@@ -26,7 +28,11 @@ const Camera: React.FC = () => {
       if (hasCameraPermission && !stream) {
         try {
           const videoStream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' }
+            video: { 
+              facingMode: 'environment',
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
           });
           
           setStream(videoStream);
@@ -51,9 +57,14 @@ const Camera: React.FC = () => {
     };
   }, [hasCameraPermission, stream]);
 
-  // Draw bounding boxes for detected objects
+  // Process and draw detected objects on canvas with higher precision
   useEffect(() => {
-    if (canvasRef.current && videoRef.current && detectedObjects.length > 0) {
+    if (!canvasRef.current || !videoRef.current || frameProcessing) return;
+    
+    const processFrame = () => {
+      if (!canvasRef.current || !videoRef.current || !detectedObjects.length) return;
+      
+      setFrameProcessing(true);
       const ctx = canvasRef.current.getContext('2d');
       if (!ctx) return;
       
@@ -64,8 +75,14 @@ const Camera: React.FC = () => {
       // Clear previous drawings
       ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
       
+      // Filter out low confidence detections
+      const highConfidenceObjects = filterByConfidence(detectedObjects);
+      
+      // Sort by priority (near objects first, then by size)
+      const prioritizedObjects = sortByPriority(highConfidenceObjects);
+      
       // Draw each detected object
-      detectedObjects.forEach(obj => {
+      prioritizedObjects.forEach(obj => {
         const { x, y, width, height } = obj.boundingBox;
         const canvasWidth = canvasRef.current!.width;
         const canvasHeight = canvasRef.current!.height;
@@ -84,9 +101,9 @@ const Camera: React.FC = () => {
             break;
         }
         
-        // Draw bounding box
+        // Draw bounding box with enhanced visibility
         ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 3;
         ctx.strokeRect(
           x * canvasWidth,
           y * canvasHeight,
@@ -94,17 +111,45 @@ const Camera: React.FC = () => {
           height * canvasHeight
         );
         
-        // Draw label
+        // Draw label with shadow for better visibility
+        ctx.shadowColor = 'black';
+        ctx.shadowBlur = 4;
         ctx.fillStyle = color;
-        ctx.font = '16px Arial';
-        ctx.fillText(
-          `${obj.label} (${Math.round(obj.confidence * 100)}%)`,
+        ctx.font = 'bold 16px Arial';
+        const text = `${obj.label} (${Math.round(obj.confidence * 100)}%)`;
+        
+        // Draw label background
+        const textMeasure = ctx.measureText(text);
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(
           x * canvasWidth,
+          (y * canvasHeight) - 20,
+          textMeasure.width + 6,
+          20
+        );
+        
+        // Draw text
+        ctx.fillStyle = color;
+        ctx.fillText(
+          text,
+          (x * canvasWidth) + 3,
           (y * canvasHeight) - 5
         );
+        ctx.shadowBlur = 0;
       });
+      
+      setFrameProcessing(false);
+    };
+    
+    processFrame();
+    
+    // Set up a more efficient rendering cycle using requestAnimationFrame
+    // only when we have objects to draw
+    if (detectedObjects.length > 0) {
+      const frameId = requestAnimationFrame(processFrame);
+      return () => cancelAnimationFrame(frameId);
     }
-  }, [detectedObjects]);
+  }, [detectedObjects, frameProcessing]);
 
   const handleToggleDetection = () => {
     if (isDetecting) {
