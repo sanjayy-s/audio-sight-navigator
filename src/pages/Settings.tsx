@@ -16,7 +16,7 @@ const Settings = () => {
     <div className="min-h-screen flex flex-col">
       <header className="bg-primary text-primary-foreground p-4 shadow-md">
         <div className="container mx-auto flex items-center">
-          <Link to="/">
+          <Link to="/camera">
             <Button variant="ghost" className="mr-2" size="icon">
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Back</span>
@@ -46,7 +46,7 @@ const Settings = () => {
       </main>
       
       <footer className="bg-muted p-4 text-center text-sm text-muted-foreground">
-        <p>Audio Sight Navigator - Enhancing mobility for visually impaired users</p>
+        <p>THIRD EYE - Enhancing mobility for visually impaired users</p>
       </footer>
     </div>
   );

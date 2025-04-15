@@ -94,7 +94,7 @@ export const DetectionProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }, 2000);
 
     // Store interval ID to clean up later
-    window.detectionInterval = mockDetectionInterval;
+    window.detectionInterval = mockDetectionInterval as unknown as number;
   };
 
   const stopDetection = () => {

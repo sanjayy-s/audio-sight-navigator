@@ -3,9 +3,8 @@ import React, { useEffect } from 'react';
 import { useDetection } from '@/contexts/DetectionContext';
 import Camera from '@/components/Camera';
 import { Button } from '@/components/ui/button';
-import { Volume2, Settings, Info } from 'lucide-react';
+import { Volume2, Settings, Info, ArrowLeft } from 'lucide-react';
 import { playDetectionSound, speakText, initializeAudio } from '@/utils/audioFeedback';
-import SettingsPanel from '@/components/SettingsPanel';
 import { Link } from 'react-router-dom';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -18,7 +17,7 @@ const Index = () => {
     const handleFirstInteraction = () => {
       initializeAudio();
       document.removeEventListener('click', handleFirstInteraction);
-      speakText("Audio Sight Navigator ready. Press the eye button to start detection.");
+      speakText("THIRD EYE ready. Press the eye button to start detection.");
     };
     
     document.addEventListener('click', handleFirstInteraction);
@@ -64,10 +63,18 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <header className="bg-primary text-primary-foreground p-4 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Volume2 className="w-6 h-6" />
-            Audio Sight Navigator
-          </h1>
+          <div className="flex items-center">
+            <Link to="/welcome">
+              <Button variant="ghost" className="mr-2" size="icon">
+                <ArrowLeft className="h-5 w-5" />
+                <span className="sr-only">Back to Welcome</span>
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Volume2 className="w-6 h-6" />
+              THIRD EYE
+            </h1>
+          </div>
           <div className="flex items-center gap-2">
             <Link to="/settings">
               <Button size="icon" variant="ghost">
@@ -124,7 +131,7 @@ const Index = () => {
       </main>
       
       <footer className="bg-muted p-4 text-center text-sm text-muted-foreground">
-        <p>Audio Sight Navigator - Enhancing mobility for visually impaired users</p>
+        <p>THIRD EYE - Enhancing mobility for visually impaired users</p>
       </footer>
     </div>
   );
