@@ -1,4 +1,3 @@
-
 // Different audio frequencies for different object types and distances
 const AUDIO_FREQUENCIES = {
   near: {
@@ -19,6 +18,14 @@ const AUDIO_FREQUENCIES = {
     door: 146,    // D3
     chair: 130,   // C3
   }
+};
+
+// Alert beep configuration for nearby objects (within 2m)
+const PROXIMITY_ALERT = {
+  frequency: 1200,  // High frequency beep
+  duration: 150,    // Short duration
+  pattern: 2,       // Number of beeps
+  interval: 200     // Interval between beeps
 };
 
 interface AudioFeedbackOptions {
@@ -85,6 +92,58 @@ export const playDetectionSound = (
   } catch (error) {
     console.error('Error playing audio feedback:', error);
   }
+};
+
+/**
+ * Play a distinct warning beep for nearby objects (within 2m)
+ * This creates a more urgent sound compared to regular detection sounds
+ */
+export const playProximityAlert = (): void => {
+  if (!audioContext) {
+    const initialized = initializeAudio();
+    if (!initialized) return;
+  }
+  
+  let beepCount = 0;
+  
+  const playBeep = () => {
+    try {
+      const oscillator = audioContext!.createOscillator();
+      const gainNode = audioContext!.createGain();
+      
+      // Use a square wave for a more alarm-like sound
+      oscillator.type = 'square';
+      oscillator.frequency.setValueAtTime(PROXIMITY_ALERT.frequency, audioContext!.currentTime);
+      
+      gainNode.gain.setValueAtTime(0.7, audioContext!.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext!.currentTime + PROXIMITY_ALERT.duration / 1000);
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext!.destination);
+      
+      oscillator.start(audioContext!.currentTime);
+      oscillator.stop(audioContext!.currentTime + PROXIMITY_ALERT.duration / 1000);
+      
+      oscillator.onended = () => {
+        oscillator.disconnect();
+        gainNode.disconnect();
+      };
+    } catch (error) {
+      console.error('Error playing proximity alert:', error);
+    }
+  };
+  
+  playBeep();
+  beepCount++;
+  
+  const alertInterval = setInterval(() => {
+    playBeep();
+    beepCount++;
+    
+    if (beepCount >= PROXIMITY_ALERT.pattern) {
+      clearInterval(alertInterval);
+    }
+  }, PROXIMITY_ALERT.interval);
 };
 
 export const playFeedbackPattern = (

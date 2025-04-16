@@ -21,6 +21,48 @@ export const calculateObjectDistance = (width: number, height: number): 'near' |
 };
 
 /**
+ * Estimate the approximate distance in meters based on the object's size in the frame.
+ * This is an estimation based on the object's bounding box area.
+ * 
+ * @param width - The width of the bounding box (0-1 normalized)
+ * @param height - The height of the bounding box (0-1 normalized)
+ * @returns Estimated distance in meters
+ */
+export const estimateDistanceInMeters = (width: number, height: number): number => {
+  const area = width * height;
+  
+  // These thresholds are estimates based on typical camera field of view
+  // and typical object sizes (average human-sized object)
+  if (area > 0.35) {
+    return 0.5; // Very close (0.5m)
+  } else if (area > 0.18) {
+    return 1; // Near (1m)
+  } else if (area > 0.1) {
+    return 1.5; // Medium-near (1.5m)
+  } else if (area > 0.07) {
+    return 2; // Medium (2m)
+  } else if (area > 0.04) {
+    return 3; // Medium-far (3m)
+  } else if (area > 0.02) {
+    return 4; // Far (4m)
+  } else {
+    return 5; // Very far (5m+)
+  }
+};
+
+/**
+ * Determines if an object is within the proximity threshold (2 meters)
+ * 
+ * @param width - The width of the bounding box (0-1 normalized)
+ * @param height - The height of the bounding box (0-1 normalized)
+ * @returns Boolean indicating if the object is within 2 meters
+ */
+export const isObjectNearby = (width: number, height: number): boolean => {
+  const estimatedDistance = estimateDistanceInMeters(width, height);
+  return estimatedDistance <= 2;
+};
+
+/**
  * Filter out low confidence detections to improve precision.
  * 
  * @param objects - Array of detected objects

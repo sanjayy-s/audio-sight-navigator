@@ -1,8 +1,13 @@
 
 import { useEffect } from 'react';
 import { DetectedObject } from '../contexts/DetectionContext';
-import { playDetectionSound } from '../utils/audioFeedback';
-import { filterByConfidence, sortByPriority, hasRequiredProperties } from '../utils/detectionUtils';
+import { playDetectionSound, playProximityAlert } from '../utils/audioFeedback';
+import { 
+  filterByConfidence, 
+  sortByPriority, 
+  hasRequiredProperties, 
+  isObjectNearby 
+} from '../utils/detectionUtils';
 
 export const useAudioProcessor = (
   detectedObjects: DetectedObject[],
@@ -17,6 +22,17 @@ export const useAudioProcessor = (
     const filteredObjects = highConfidenceObjects.filter(hasRequiredProperties);
     const prioritizedObjects = sortByPriority(filteredObjects);
     
+    // Check if any objects are within the 2-meter proximity threshold
+    const nearbyObjects = prioritizedObjects.filter(obj => 
+      isObjectNearby(obj.boundingBox.width, obj.boundingBox.height)
+    );
+    
+    // Play a proximity alert if objects are detected within 2 meters
+    if (nearbyObjects.length > 0) {
+      playProximityAlert();
+    }
+    
+    // Also play the regular detection sounds for all objects
     prioritizedObjects.forEach((obj, index) => {
       const delay = index * 150;
       setTimeout(() => {
