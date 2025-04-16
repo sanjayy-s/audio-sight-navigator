@@ -196,3 +196,45 @@ export const calculateIoU = (
   return intersectionArea / (box1Area + box2Area - intersectionArea);
 };
 
+/**
+ * Filter out objects that would be outside the viewable frame
+ * 
+ * @param objects - Array of detected objects
+ * @returns Array of objects within the viewable frame
+ */
+export const filterOutOfFrameObjects = (objects: Array<any>): Array<any> => {
+  return objects.filter(obj => {
+    const { x, y, width, height } = obj.boundingBox;
+    
+    // Check if the object is at least partially within frame (with some margin)
+    const isWithinHorizontalBounds = x < 0.95 && x + width > 0.05;
+    const isWithinVerticalBounds = y < 0.95 && y + height > 0.05;
+    
+    return isWithinHorizontalBounds && isWithinVerticalBounds;
+  });
+};
+
+/**
+ * Prevents duplicate detections of the same object in similar positions
+ * 
+ * @param objects - Array of detected objects
+ * @returns Array with duplicates removed
+ */
+export const removeDuplicateDetections = (objects: Array<any>): Array<any> => {
+  if (!objects || objects.length <= 1) return objects;
+  
+  const result: Array<any> = [];
+  const processed = new Set<string>();
+  
+  objects.forEach(obj => {
+    // Create a unique key based on object label and position (rounded to reduce precision)
+    const key = `${obj.label}-${Math.round(obj.boundingBox.x * 10)}-${Math.round(obj.boundingBox.y * 10)}`;
+    
+    if (!processed.has(key)) {
+      processed.add(key);
+      result.push(obj);
+    }
+  });
+  
+  return result;
+};
