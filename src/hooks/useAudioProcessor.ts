@@ -1,5 +1,6 @@
+
 import { useEffect, useRef } from 'react';
-import { DetectedObject } from '../contexts/DetectionContext';
+import { DetectedObject } from '../types/detection';
 import { playDetectionSound, playProximityAlert } from '../utils/audioFeedback';
 import { 
   filterByConfidence, 
