@@ -20,12 +20,13 @@ const AUDIO_FREQUENCIES = {
   }
 };
 
-// Alert beep configuration for nearby objects (within 2m)
+// Enhanced emergency warning configuration for nearby objects (within 2m)
 const PROXIMITY_ALERT = {
-  frequency: 1200,  // High frequency beep
-  duration: 150,    // Short duration
-  pattern: 2,       // Number of beeps
-  interval: 200     // Interval between beeps
+  frequency: 1500,  // Higher frequency for more urgent sound
+  duration: 200,    // Slightly longer duration
+  pattern: 3,       // Increased number of beeps for urgency
+  interval: 150,    // Shorter interval between beeps
+  volume: 0.8       // Louder volume for emergency warning
 };
 
 interface AudioFeedbackOptions {
@@ -95,8 +96,8 @@ export const playDetectionSound = (
 };
 
 /**
- * Play a distinct warning beep for nearby objects (within 2m)
- * This creates a more urgent sound compared to regular detection sounds
+ * Play an emergency warning sound for nearby objects (within 2m)
+ * This creates an urgent alert sound to warn users of close proximity objects
  */
 export const playProximityAlert = (): void => {
   if (!audioContext) {
@@ -111,11 +112,12 @@ export const playProximityAlert = (): void => {
       const oscillator = audioContext!.createOscillator();
       const gainNode = audioContext!.createGain();
       
-      // Use a square wave for a more alarm-like sound
-      oscillator.type = 'square';
+      // Use a sawtooth wave for a more alarming sound
+      oscillator.type = 'sawtooth';
       oscillator.frequency.setValueAtTime(PROXIMITY_ALERT.frequency, audioContext!.currentTime);
       
-      gainNode.gain.setValueAtTime(0.7, audioContext!.currentTime);
+      // Set higher volume for emergency warning
+      gainNode.gain.setValueAtTime(PROXIMITY_ALERT.volume, audioContext!.currentTime);
       gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext!.currentTime + PROXIMITY_ALERT.duration / 1000);
       
       oscillator.connect(gainNode);
@@ -129,13 +131,15 @@ export const playProximityAlert = (): void => {
         gainNode.disconnect();
       };
     } catch (error) {
-      console.error('Error playing proximity alert:', error);
+      console.error('Error playing emergency proximity alert:', error);
     }
   };
   
+  // Play first beep immediately
   playBeep();
   beepCount++;
   
+  // Schedule remaining beeps
   const alertInterval = setInterval(() => {
     playBeep();
     beepCount++;

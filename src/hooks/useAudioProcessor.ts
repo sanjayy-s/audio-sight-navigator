@@ -27,24 +27,32 @@ export const useAudioProcessor = (
       isObjectNearby(obj.boundingBox.width, obj.boundingBox.height)
     );
     
-    // Play a proximity alert if objects are detected within 2 meters
+    // Play an emergency warning sound if objects are detected within 2 meters
     if (nearbyObjects.length > 0) {
       playProximityAlert();
+      
+      // Optional: Enhance with spoken warning for the first nearby object
+      // if (nearbyObjects.length > 0) {
+      //   speakText(`Warning: ${nearbyObjects[0].label} in close proximity`);
+      // }
     }
     
     // Also play the regular detection sounds for all objects
     prioritizedObjects.forEach((obj, index) => {
-      const delay = index * 150;
-      setTimeout(() => {
-        playDetectionSound(
-          obj.label, 
-          obj.distance,
-          { 
-            duration: obj.distance === 'near' ? 400 : 200,
-            volume: obj.confidence
-          }
-        );
-      }, delay);
+      // Don't play regular sounds for objects that triggered emergency warning
+      if (!isObjectNearby(obj.boundingBox.width, obj.boundingBox.height)) {
+        const delay = index * 150;
+        setTimeout(() => {
+          playDetectionSound(
+            obj.label, 
+            obj.distance,
+            { 
+              duration: obj.distance === 'near' ? 400 : 200,
+              volume: obj.confidence
+            }
+          );
+        }, delay);
+      }
     });
   }, [detectedObjects, isDetecting, isMuted]);
 };
